@@ -42,7 +42,14 @@ export default function App() {
         body: JSON.stringify(formData),
       });
 
-      const result = await response.json();
+      let result;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(text || `Sunucu hatası: ${response.status}`);
+      }
 
       if (!response.ok) {
         throw new Error(result.error || "Bir hata oluştu");

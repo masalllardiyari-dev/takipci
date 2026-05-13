@@ -39,7 +39,7 @@ async function startServer() {
       // KRİTİK: Alan adınızı doğruladığınız için artık 'onboarding@resend.dev' yerine 
       // kendi doğrulanmış adresinizi kullanmalısınız. 
       // Örn: "Artemis Digital <info@alanadiniz.com>"
-      const FROM_EMAIL = "Artemis Digital <masalllardiyari@gmail.com>"; 
+      const FROM_EMAIL = "Artemis Digital <info@takipcisatis.shop>"; 
 
       // 1. Yöneticiye Bildirim (Size)
       const adminEmail = await resend.emails.send({
@@ -101,7 +101,10 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error("Genel Sunucu Hatası:", error);
-      res.status(500).json({ error: error.message || "E-posta gönderimi başarısız oldu." });
+      res.status(500).json({ 
+        error: error.message || "Sunucu tarafında bir hata oluştu.",
+        details: process.env.NODE_ENV !== "production" ? error.stack : undefined
+      });
     }
   });
 
