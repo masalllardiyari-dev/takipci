@@ -1,42 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Helper functions
+    // Basic helper functions
     function isSignedIn() {
       return request.auth != null;
     }
     
     function isAdmin() {
-      // Admin list (must be updated here if env changes, as rules don't see env)
-      let admins = ['yukselaral77@gmail.com', 'masalllardiyari@gmail.com', 'yukselaral1@gmail.com'];
+      // List of admin emails
+      let admins = ["masalllardiyari@gmail.com", "yukselaral77@gmail.com", "yukselaral1@gmail.com"];
       return isSignedIn() && request.auth.token.email in admins;
     }
-    
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
     }
 
-    function isValidOrder(data) {
-      // Basic validation for creation
-      return data.firstName is string && data.firstName.size() > 0 &&
-             data.lastName is string && data.lastName.size() > 0 &&
-             data.email is string && data.email.size() > 0 &&
-             data.status == 'pending';
-    }
-
-    match /orders/{orderId} {
-      allow create: if true;
-      allow get: if isAdmin() || isOwner(resource.data.userId);
-      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
+    // Generic allow ALL for public collections to fix "nothing is loading"
     match /categories/{categoryId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -52,9 +33,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /orders/{orderId} {
+      allow create, read, list: if true;
+      allow update, delete: if isAdmin();
+    }
+
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+    
+    match /admins/{adminId} {
+      allow read: if true;
+      allow write: if false;
     }
   }
 }
