@@ -32,7 +32,7 @@ async function startServer() {
     console.log("Talep Gövdesi:", JSON.stringify(req.body));
     
     try {
-      const { firstName, lastName, email, phone, instagram, message } = req.body;
+      const { firstName, lastName, email, phone, instagram, message, serviceName } = req.body;
 
       if (!firstName || !lastName || !email || !message) {
         console.log("Hata: Gerekli alanlar eksik");
@@ -47,10 +47,11 @@ async function startServer() {
       const adminResponse = await resend.emails.send({
         from: FROM_EMAIL,
         to: "masalllardiyari@gmail.com",
-        subject: `🔔 Yeni Sipariş: ${firstName} ${lastName}`,
+        subject: `🔔 Yeni Sipariş${serviceName ? `: ${serviceName}` : ""} - ${firstName} ${lastName}`,
         html: `
           <div style="font-family: sans-serif; padding: 20px; color: #333; line-height: 1.6;">
             <h2 style="color: #5A5A40; border-bottom: 2px solid #5A5A40; padding-bottom: 10px;">Yeni Sipariş Talebi</h2>
+            ${serviceName ? `<p><strong>Seçilen Hizmet:</strong> ${serviceName}</p>` : ""}
             <p><strong>Müşteri:</strong> ${firstName} ${lastName}</p>
             <p><strong>E-posta:</strong> ${email}</p>
             <p><strong>Telefon:</strong> ${phone || "Belirtilmedi"}</p>
