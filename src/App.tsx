@@ -10,7 +10,10 @@ import {
   TrendingUp, Star, Zap, ShieldCheck, Globe, Search
 } from "lucide-react";
 import { auth, db } from "./lib/firebase";
-import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
+import { 
+  signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut,
+  signInWithEmailAndPassword
+} from "firebase/auth";
 import { 
   collection, addDoc, getDocs, query, orderBy, 
   deleteDoc, doc, updateDoc, serverTimestamp, getDoc, where 
@@ -71,15 +74,12 @@ const Navbar = ({ user }: { user: any }) => {
               )}
             </div>
           ) : (
-            <button 
-              onClick={() => {
-                const provider = new GoogleAuthProvider();
-                signInWithPopup(auth, provider);
-              }}
+            <Link 
+              to="/admin"
               className="px-6 py-2.5 bg-brand-dark text-white rounded-xl font-bold text-sm hover:bg-brand-primary transition-all shadow-lg shadow-brand-dark/10"
             >
-              Giriş Yap
-            </button>
+              Giriş Yap / Üye Ol
+            </Link>
           )}
         </div>
 
@@ -128,16 +128,13 @@ const Navbar = ({ user }: { user: any }) => {
                 )}
               </>
             ) : (
-              <button 
-                onClick={() => {
-                  const provider = new GoogleAuthProvider();
-                  signInWithPopup(auth, provider);
-                  setIsOpen(false);
-                }}
+              <Link 
+                to="/admin"
+                onClick={() => setIsOpen(false)}
                 className="text-lg font-bold text-white p-4 rounded-2xl bg-brand-dark flex items-center justify-center gap-2"
               >
-                <LogIn className="w-5 h-5" /> Giriş Yap
-              </button>
+                <LogIn className="w-5 h-5" /> Giriş Yap / Üye Ol
+              </Link>
             )}
           </motion.div>
         )}
@@ -238,7 +235,7 @@ const HomePage = () => {
               <div className="relative">
                 <div className="absolute inset-0 bg-brand-primary/20 rounded-full blur-[80px]" />
                 <img  
-                  src="https://i.hizliresim.com/9ejdyo3.png" 
+                  src="/ChatGPT Image 13 May 2026 17_22_12.png" 
                   alt="Koala Mascot"
                   className="w-full max-w-[500px] relative z-20 drop-shadow-2xl"
                 />
@@ -928,6 +925,96 @@ const AdminPanel = ({ user }: { user: any }) => {
   );
 };
 
+const AdminLogin = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err: any) {
+      setError("Firebase: Error (auth/unauthorized-domain). Lütfen domain'i Firebase Authorized Domains listesine ekleyin.");
+    }
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
+      setError("Hatalı giriş: E-posta veya şifre yanlış.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#fafafa] px-6 py-20">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md bg-white p-10 rounded-[48px] shadow-2xl border border-gray-100"
+      >
+        <Zap className="w-16 h-16 text-brand-primary mb-8 mx-auto" />
+        <h2 className="text-3xl font-black text-brand-dark mb-2 tracking-tighter italic text-center">Giriş Yap</h2>
+        <p className="text-gray-400 font-medium mb-10 text-center">Paneliniz için giriş yapın.</p>
+
+        {error && <div className="p-4 bg-rose-50 text-rose-500 rounded-2xl text-xs font-bold mb-6 border border-rose-100">{error}</div>}
+
+        <form onSubmit={handleEmailLogin} className="space-y-4 mb-8">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-4">E-posta</label>
+            <input 
+              type="email" 
+              required
+              className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-brand-primary transition-all font-bold"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-4">Şifre</label>
+            <input 
+              type="password" 
+              required
+              className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-brand-primary transition-all font-bold"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <button 
+            disabled={loading}
+            className="w-full py-5 bg-brand-dark text-white rounded-2xl font-black text-lg hover:bg-brand-primary transition-all disabled:opacity-50 shadow-xl shadow-brand-dark/10"
+          >
+            {loading ? <Loader2 className="animate-spin mx-auto text-white" /> : "Giriş Yap"}
+          </button>
+        </form>
+
+        <div className="flex items-center gap-4 mb-8">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-[10px] font-black text-gray-300 uppercase">Veya</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </div>
+
+        <button 
+          onClick={handleGoogleLogin}
+          type="button"
+          className="w-full py-4 bg-white border border-gray-100 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-50 transition-all shadow-sm"
+        >
+          <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="google" /> Google ile Devam Et
+        </button>
+
+        <Link to="/" className="mt-10 block text-center text-sm font-bold text-gray-400 hover:text-brand-primary transition-all">Anasayfaya Dön</Link>
+      </motion.div>
+    </div>
+  );
+};
+
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -939,11 +1026,6 @@ export default function App() {
     });
     return () => unsub();
   }, []);
-
-  const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-[#fafafa]"><Loader2 className="animate-spin text-brand-primary" /></div>;
 
@@ -960,23 +1042,7 @@ export default function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/dashboard" element={<UserDashboard user={user} />} />
           <Route path="/legal/kvkk" element={<KVKKPage />} />
-          <Route path="/admin" element={user && ADMIN_EMAILS.includes(user.email) ? <AdminPanel user={user} /> : (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#fafafa] px-6 text-center">
-               <Zap className="w-20 h-20 text-brand-primary mb-12 animate-pulse" />
-               <h2 className="text-4xl font-black text-brand-dark mb-4 tracking-tighter">Yetkisiz Erişim</h2>
-               <p className="text-gray-400 font-medium mb-12 max-w-sm">Admin paneli sadece sistem yöneticilerine açıktır.</p>
-               {!user ? (
-                 <button 
-                  onClick={handleLogin}
-                  className="px-12 py-6 bg-brand-dark text-white rounded-[32px] font-black flex items-center gap-4 hover:bg-brand-primary transition-all shadow-3xl shadow-brand-dark/20 text-2xl"
-                 >
-                   <LogIn className="w-8 h-8" /> Google ile Giriş
-                 </button>
-               ) : (
-                 <Link to="/" className="px-12 py-6 bg-brand-dark text-white rounded-[32px] font-black">Anasayfaya Dön</Link>
-               )}
-            </div>
-          )} />
+          <Route path="/admin" element={user ? (ADMIN_EMAILS.includes(user.email) ? <AdminPanel user={user} /> : <UserDashboard user={user} />) : <AdminLogin />} />
         </Routes>
 
         <footer className="py-32 bg-brand-dark overflow-hidden relative border-t border-white/5">
