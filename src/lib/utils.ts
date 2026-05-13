@@ -39,3 +39,14 @@ export interface Order {
   status: 'pending' | 'processing' | 'completed';
   createdAt: any;
 }
+
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  slug: string;
+  description: string;
+  color: string;
+  textColor: string;
+  order: number;
+}
