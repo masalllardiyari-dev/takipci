@@ -27,83 +27,87 @@ async function startServer() {
 
   // API endpoint for sending emails
   app.post("/api/send-email", async (req, res) => {
+    console.log("--- E-posta Gönderim Talebi Başladı ---");
+    console.log("Talep Başlığı:", req.headers["content-type"]);
+    console.log("Talep Gövdesi:", JSON.stringify(req.body));
+    
     try {
       const { firstName, lastName, email, phone, instagram, message } = req.body;
 
       if (!firstName || !lastName || !email || !message) {
-        return res.status(400).json({ error: "Lütfen gerekli tüm alanları (İsim, Soyisim, E-posta, Mesaj) doldurun." });
+        console.log("Hata: Gerekli alanlar eksik");
+        return res.status(400).json({ error: "Lütfen tüm zorunlu alanları doldurun." });
       }
 
       const resend = getResend();
+      const FROM_EMAIL = "Artemis Digital <info@takipcisatis.shop>";
 
-      // KRİTİK: Alan adınızı doğruladığınız için artık 'onboarding@resend.dev' yerine 
-      // kendi doğrulanmış adresinizi kullanmalısınız. 
-      // Örn: "Artemis Digital <info@alanadiniz.com>"
-      const FROM_EMAIL = "Artemis Digital <info@takipcisatis.shop>"; 
-
-      // 1. Yöneticiye Bildirim (Size)
-      const adminEmail = await resend.emails.send({
+      // 1. Yöneticiye Bildirim
+      console.log("Yöneticiye mail gönderiliyor...");
+      const adminResponse = await resend.emails.send({
         from: FROM_EMAIL,
         to: "masalllardiyari@gmail.com",
         subject: `🔔 Yeni Sipariş: ${firstName} ${lastName}`,
         html: `
-          <div style="font-family: sans-serif; padding: 20px; color: #333;">
-            <h2 style="color: #5A5A40;">Yeni Bir Sipariş Talebi Geldi</h2>
+          <div style="font-family: sans-serif; padding: 20px; color: #333; line-height: 1.6;">
+            <h2 style="color: #5A5A40; border-bottom: 2px solid #5A5A40; padding-bottom: 10px;">Yeni Sipariş Talebi</h2>
             <p><strong>Müşteri:</strong> ${firstName} ${lastName}</p>
             <p><strong>E-posta:</strong> ${email}</p>
             <p><strong>Telefon:</strong> ${phone || "Belirtilmedi"}</p>
             <p><strong>Instagram:</strong> ${instagram || "Belirtilmedi"}</p>
-            <div style="margin-top: 20px; padding: 15px; background: #F7F5F0; border-radius: 10px;">
-              <strong>Sipariş Notu:</strong><br/>
+            <div style="margin-top: 20px; padding: 15px; background: #F7F5F0; border-radius: 10px; border: 1px solid #E5E0D8;">
+              <strong>Mesaj:</strong><br/>
               ${message.replace(/\n/g, "<br>")}
             </div>
           </div>
         `,
       });
 
-      if (adminEmail.error) {
-        console.error("Yönetici Mail Hatası (Resend):", adminEmail.error);
-        throw new Error(adminEmail.error.message || "Bildirim gönderilemedi.");
+      if (adminResponse.error) {
+        console.error("Yönetici Mail Hatası:", adminResponse.error);
+        return res.status(400).json({ error: adminResponse.error.message });
       }
 
-      // 2. Müşteriye Onay Maili (Karşı tarafa)
-      // NOT: Domain doğrulaması yapıldığı için artık dışarıya mail gönderebilirsiniz.
-      const customerEmail = await resend.emails.send({
+      console.log("Yönetici maili başarıyla gönderildi:", adminResponse.data?.id);
+
+      // 2. Müşteriye Onay Maili
+      console.log("Müşteriye onay maili gönderiliyor...");
+      const customerResponse = await resend.emails.send({
         from: FROM_EMAIL,
-        to: email, // Formu dolduran kişinin maili
+        to: email,
         subject: "Siparişiniz Alınmıştır - Artemis Digital",
         html: `
-          <div style="font-family: sans-serif; padding: 20px; color: #333;">
+          <div style="font-family: sans-serif; padding: 20px; color: #333; line-height: 1.6;">
             <h2 style="color: #5A5A40;">Merhaba ${firstName},</h2>
             <p>Siparişiniz/talebiniz başarıyla alınmıştır. En kısa sürede sizinle iletişime geçeceğiz.</p>
             <div style="padding: 15px; border-left: 4px solid #5A5A40; background: #F7F5F0; margin: 20px 0;">
-              <p><strong>Sipariş Özetiniz:</strong></p>
-              <ul>
-                <li><strong>Ad Soyad:</strong> ${firstName} ${lastName}</li>
-                <li><strong>Instagram:</strong> ${instagram || "-"}</li>
-              </ul>
+              <strong>Sipariş Detayları:</strong><br/>
+              Ad Soyad: ${firstName} ${lastName}<br/>
+              Instagram: ${instagram || "-"}
             </div>
             <p>Bizi tercih ettiğiniz için teşekkür ederiz!</p>
-            <br/>
             <p>Saygılarımızla,<br/><strong>Artemis Digital Ekibi</strong></p>
           </div>
         `,
       });
 
-      if (customerEmail.error) {
-        console.error("Müşteri Onay Mail Hatası (Resend):", customerEmail.error);
+      if (customerResponse.error) {
+        console.error("Müşteri Onay Mail Hatası (Kritik değil):", customerResponse.error);
+      } else {
+        console.log("Müşteri maili gönderildi:", customerResponse.data?.id);
       }
 
-      res.status(200).json({ 
+      console.log("--- İşlem Başarıyla Tamamlandı ---");
+      return res.status(200).json({ 
         success: true, 
-        adminEmailId: adminEmail.data?.id,
-        customerEmailId: customerEmail.data?.id 
+        message: "Mesajınız alındı."
       });
+
     } catch (error: any) {
-      console.error("Genel Sunucu Hatası:", error);
-      res.status(500).json({ 
-        error: error.message || "Sunucu tarafında bir hata oluştu.",
-        details: process.env.NODE_ENV !== "production" ? error.stack : undefined
+      console.error("Beklenmedik Sunucu Hatası:", error);
+      return res.status(500).json({ 
+        error: "Sunucu tarafında bir hata oluştu.",
+        details: error.message
       });
     }
   });
