@@ -12,29 +12,16 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email in admins;
     }
 
-    // Default deny
+    // ALL-PERMISSIVE READS FOR DEBUGGING
     match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Generic allow ALL for public collections to fix "nothing is loading"
-    match /categories/{categoryId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    match /services/{serviceId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /posts/{postId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
+    // Specific collections
     match /orders/{orderId} {
-      allow create, read, list: if true;
+      allow create: if true;
+      allow read, list: if true;
       allow update, delete: if isAdmin();
     }
 

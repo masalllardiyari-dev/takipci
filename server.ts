@@ -88,9 +88,15 @@ async function startServer() {
       const FROM_EMAIL = "Artemis Digital <info@takipcisatis.shop>";
       const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "masalllardiyari@gmail.com";
 
-      console.log(`E-posta gönderiliyor: ${FROM_EMAIL} -> ${ADMIN_EMAIL}`);
+      console.log(`E-posta gönderiliyor. Gönderen: ${FROM_EMAIL}, Alıcı: ${ADMIN_EMAIL}, Müşteri: ${email}`);
+      
+      if (!process.env.RESEND_API_KEY) {
+        console.error("RESEND_API_KEY eksik!");
+        throw new Error("E-posta servis anahtarı yapılandırılmamış.");
+      }
 
       // 1. Yöneticiye Bildirim
+      console.log("Yönetici maili gönderilmeye çalışılıyor...");
       const adminResponse = await resend.emails.send({
         from: FROM_EMAIL,
         to: ADMIN_EMAIL,
